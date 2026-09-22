@@ -1,6 +1,6 @@
 # The Unofficial Guide
 
-<!-- Replace this line with your name and which corpus you picked. -->
+Sarah Al-Said - City_guides Corpus
 
 > **This file is your submission.** Fill it in as you go — most sections get
 > written during the milestone that produces them, not at the end.
@@ -29,53 +29,86 @@
 
 ## Chunking Strategy
 
-**Chunk size:**
-**Overlap:**
+**Chunk size:** Variable — one chunk per `##` markdown section (not a fixed
+character count).
+**Overlap:** None between sections; each chunk is prefixed with its
+document's title so it reads standalone.
 
-<!-- What about YOUR documents made you pick these numbers? Short posts and
-     long sectioned guides don't want the same chunking, and "800 seemed
-     reasonable" earns nothing. Point at something you noticed when you read
-     the documents in Milestone 1.
+My documents (`city_guides`) are hand-structured guides, each broken into
+labeled sections — Getting there, Getting around, Eat and drink, What to see,
+Where to stay, When to go, Practical notes. The starter's fixed 800-character
+chunker cut straight through these boundaries: it produced 51 chunks
+averaging 650 characters, with a longest of exactly 800 (meaning real content
+was being truncated mid-section) and a shortest of 24 (a leftover fragment
+from an uneven division).
 
-     If you changed your mind partway through, say so and say why. That's worth
-     more than pretending you got it right first time.
+I replaced it with a chunker that splits on `##` headers instead, since each
+section is already a complete, self-contained thought written by the
+document's author. This produced 94 chunks averaging roughly 300 characters,
+with no more arbitrary truncation.
 
-     Milestone 3. -->
+I changed my mind once partway through: my first version duplicated each
+document's title inside its own intro chunk (the title line was being
+captured both as the chunk's title prefix and as part of the section body).
+I fixed the section-splitting logic to skip the title line specifically.
+
+One real weak spot I found and kept rather than hid: the very first section
+of `guide_accessibility.md` (before its first `##` header) is a short
+meta-comment about the guide's tone — "an honest assessment rather than a
+promotional one" — and doesn't answer any concrete question on its own. Every
+other sampled chunk stands alone; this one is the exception, and it's a
+structural side effect of treating a document's opening paragraph as its own
+chunk even when that paragraph carries little content.
 
 ## Sample Chunks
 
-<!-- Five chunks, pasted as text. Label each one and name the file it came from
-     AND the function that produced it — the grader checks your code against
-     what you claim here.
-
-     `python app.py chunks -n 5` prints all three for you. Copy them straight
-     across.
-
-     Milestone 3. -->
-
-**Chunk 1** — source: `` — produced by: ``
+**Chunk 1** — source: `guide_accessibility.md#0` — produced by: `chunker.py::split_documents`
 
 ```
+Getting around the region with limited mobility
+
+An honest assessment rather than a promotional one. Some of these places are
+difficult and it is better to know in advance.
 ```
 
-**Chunk 2** — source: `` — produced by: ``
+**Chunk 2** — source: `guide_corry_vale.md#5` — produced by: `chunker.py::split_documents`
 
 ```
+Corry Vale
+
+## Where to stay
+
+Perhaps thirty beds in the entire valley, spread across two pubs and a handful of farmhouse rooms. In summer these are booked months ahead. Camping is permitted on two marked fields and nowhere else.
 ```
 
-**Chunk 3** — source: `` — produced by: ``
+**Chunk 3** — source: `guide_givens_mill.md#2` — produced by: `chunker.py::split_documents`
 
 ```
+Givens Mill
+
+## Getting around
+
+Everything is on one street along the river. The mill is at one end and the church at the other, eight minutes apart. The riverside path continues in both directions for as far as you want to walk.
 ```
 
-**Chunk 4** — source: `` — produced by: ``
+**Chunk 4** — source: `guide_kestrelford.md#4` — produced by: `chunker.py::split_documents`
 
 ```
+Kestrelford
+
+## What to see
+
+The market square on a Saturday morning is the main event and has run continuously since the 1400s. The parish church has a 13th-century tower you can climb for £2. The old trackbed walk runs six miles to the next village along an easy gradient and is the best half-day here.
 ```
 
-**Chunk 5** — source: `` — produced by: ``
+**Chunk 5** — source: `guide_pellew_sands.md#6` — produced by: `chunker.py::split_documents`
 
 ```
+Pellew Sands
+
+## When to go
+
+June and September for the beach without the crowds. July and August are busy and the town is at its most itself, for better and worse. Winter is bleak, largely closed, and has a following among people who like that sort of thing.
 ```
 
 ## Sample Answer
