@@ -21,11 +21,17 @@ Sarah Al-Said - City_guides Corpus
 
 ## What This Does
 
-<!-- Three or four sentences. Which corpus you picked, and the kinds of
-     questions your system answers. Write it for someone who has never seen
-     this repo.
+This system is a retrieval-augmented knowledge base over `city_guides`, a corpus of 14 travel guides. The corpus covers individual towns and villages alongside 
+regional guides on transport, walking, dining, seasonality, and accessibility.
 
-     Milestone 5. -->
+Given a specific query the system:
+
+1. **Retrieves** the most relevant guide section from the corpus.
+2. **Generates** an answer grounded in the retrieved content.
+3. **Cites** the source document the answer was drawn from.
+
+The result is a traceable answer for every query, with each response tied back
+to a specific guide in `city_guides`.
 
 ## Chunking Strategy
 
@@ -113,50 +119,72 @@ June and September for the beach without the crowds. July and August are busy an
 
 ## Sample Answer
 
-<!-- One complete question and answer, pasted as text, with the source line
-     visible. Milestone 4. -->
-
 **Question:**
+What time do most kitchens in Marchwood stop serving food?
 
 **Answer:**
 
-```
-```
+In Marchwood, kitchens serve until 10:30 pm, and until midnight on Fridays and Saturdays (guide_marchwood.md).
+
+Sources retrieved: guide_eating.md, guide_kestrelford.md, guide_marchwood.md
 
 **My relevance cutoff:**
 
-<!-- The number you set in config.py, and how you got there.
+0.6 (the starter's default). I tested it against my 5 in-scope questions and 5 out-of-scope questions and found a clean gap — in-scope distances ranged 0.266–0.382, out-of-scope ranged 0.779–0.926, with nothing in between. 0.6 sits well inside that gap, so I kept the default rather than changing it.
 
-     You ran five questions your corpus covers and the five in OUT_OF_SCOPE
-     that it clearly doesn't, and wrote down the best distance for each. What
-     did those two groups look like? Where was the gap? Put the actual numbers
-     here — the table below wants all ten rows.
-
-     Milestone 4. -->
 
 | Question | In corpus? | Best distance |
 |---|---|---|
-|  |  |  |
+| How often do buses run to Brightwater on Sundays? | Yes | 0.325 |
+| What time do most kitchens in Marchwood stop serving food? | Yes | 0.268 |
+| Why should visitors check tide tables before going to Elder Ness? | Yes | 0.382 |
+| How long does the Corry Vale circuit walk take, and how much climbing does it involve? | Yes | 0.296 |
+| When does the Givens Mill watermill close for the season? | Yes | 0.266 |
+| What is the capital of Mongolia? | No | 0.779 |
+| How do I change the oil in a diesel engine? | No | 0.882 |
+| Who won the 1994 World Cup? | No | 0.926 |
+| What is the recommended dosage of ibuprofen for a headache? | No | 0.818 |
+| How do I write a for loop in Rust? | No | 0.814 |
 
 ## How I Used AI
 
-<!-- Two specific moments. For each: what you asked for, what came back, and
-     what you changed about it.
+### 1. Chunking Strategy
 
-     "I asked Claude to write the chunking function from my notes. It ignored
-     the overlap, so I added that myself" is the level of detail we're after.
-     "I used AI to help me code" is not.
+**Problem:** The starter's fixed 800-character chunker was splitting through the
+labeled sections in my `city_guides` documents.
 
-     Milestone 5. -->
+**Approach:** I worked with Claude to redesign the chunker to split on `##`
+markdown headers, since each section (e.g., *Getting there*, *Eat and drink*)
+is already a self-contained unit of meaning.
 
-**1.**
+**Validation:** The first implementation duplicated each document's title inside
+its intro chunk, because the title line was captured both as a prefix and as
+part of the section body. I caught this by **inspecting the printed chunks
+directly** rather than assuming the code was correct. Claude then fixed the
+section-body loop to skip the title line.
 
-**2.**
+**Outcome:** Chunks now align one-to-one with guide sections, with no duplicated
+content.
 
-<!-- ── Stretch features ─────────────────────────────────────────────────────
-     Doing one? Say so here BEFORE you start. A feature this README never
-     claims earns nothing.
-     ───────────────────────────────────────────────────────────────────────── -->
+### 2. Grounding Instruction Verification
+
+**Problem:** I needed to confirm the starter's default grounding instruction was
+strict enough for my corpus before relying on it.
+
+**Approach:** At Claude's suggestion, I designed a targeted test instead of
+assuming the instruction worked. I ran `--show-prompt` on a query where two
+retrieved chunks could plausibly conflict:
+
+- `guide_eating.md`: kitchens "across the region" close by 9pm
+- `guide_marchwood.md`: Marchwood is exempt, with kitchens open until 10:30pm
+
+**Validation:** The model **correctly prioritized the more specific chunk** and
+cited the right source document.
+
+**Outcome:** I kept the default grounding instruction, backed by evidence rather
+than assumption. This conflict case is one I would not have thought to test on
+my own.
+
 
 ---
 
