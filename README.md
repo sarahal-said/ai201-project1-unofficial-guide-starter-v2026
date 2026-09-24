@@ -196,27 +196,129 @@ my own.
 
 ## Run Log — Before
 
-<!-- Your five criteria, three runs each. `python run_eval.py --label before`
-     runs the questions, puts the OUT_OF_SCOPE ones through the gate, and
-     writes it all into results/ for you. Targets come from criteria.md; the
-     verdict column is your call.
-
-     Criterion 3 is measured in one deterministic pass rather than three, so
-     the same number goes in all three run columns. That's correct, not lazy.
-
-     Milestone 1. -->
-
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| 1. Retrieved chunks contain the answer | 4 of 5 | 4/5 | 4/5 | 4/5 | |
+| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5 | 5/5 | |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | |
+| 4. Sampled chunks stand alone | 4 of 5 | 5/5 | 5/5 | 5/5 | |
+| 5. Town question cites that town's own guide | 4 of 5 | 4/5 | 4/5 | 4/5 | |
 
-<!-- Underneath, paste the REAL output for each criterion from one of your
-     runs — the actual text your system produced, not a description of it.
-     Name the file and function that produced it. -->
+### Real output — Run 1
+
+Source files: `results/run_2026-09-23_1949_before.md` (written by `run_eval.py::main`) and
+`results/scores_before_2026-09-23_1949.jsonl` (written by `scorer.py::judge`).
+
+**Criterion 1 — Retrieved chunks contain the answer** (retrieval by `store.py::search`, called from `run_eval.py::run_once`)
+
+Miss — *How often do buses run to Brightwater on Sundays?* The answer is in `guide_brightwater.md#2`
+(*Getting around*: "The local bus runs two routes on a 30-minute headway until 7pm and stops entirely on Sundays.").
+That chunk was not retrieved. The five chunks that came back:
+
+```
+guide_regional_transport.md#1   0.3252
+guide_kestrelford.md#1          0.3568
+guide_brightwater.md#1          0.3773   (Getting there — trains, not buses)
+guide_regional_transport.md#0   0.3878
+guide_givens_mill.md#1          0.3960
+```
+
+Hit — *What time do most kitchens in Marchwood stop serving food?* `guide_marchwood.md#3` came back at rank 2:
+
+```
+guide_eating.md#1       0.2681
+guide_marchwood.md#3    0.2796   ← contains "kitchens serve until 10:30pm"
+guide_eating.md#2       0.3802
+guide_kestrelford.md#3  0.4431
+guide_marchwood.md#6    0.4832
+```
+
+**Criterion 2 — Every answer names a source** (`generate.py::answer_from_chunks`)
+
+*What time do most kitchens in Marchwood stop serving food?* — run 1
+- Best distance: 0.2681 (passed the gate)
+- Sources retrieved: guide_eating.md, guide_kestrelford.md, guide_marchwood.md
+
+```
+Kitchens in Marchwood serve until 10:30pm, and until midnight on Fridays and Saturdays. 
+
+Source: `guide_marchwood.md`
+```
+
+*When does the Givens Mill watermill close for the season?* — run 1
+
+```
+The mill is closed entirely in winter (running only March to November). 
+
+Source: guide_givens_mill.md
+```
+
+**Criterion 3 — Gate stops out-of-corpus questions** (`run_eval.py::check_out_of_scope`, using `gate.py::check`, cutoff 0.6)
+
+Refused 5 of 5.
+
+| Out-of-scope question | Best distance | Gate |
+|---|---|---|
+| What is the capital of Mongolia? | 0.808 | refused |
+| How do I change the oil in a diesel engine? | 0.882 | refused |
+| Who won the 1994 World Cup? | 0.982 | refused |
+| What is the recommended dosage of ibuprofen for a headache? | 0.818 | refused |
+| How do I write a for loop in Rust? | 0.814 | refused |
+
+**Criterion 4 — Sampled chunks stand alone** (`chunker.py::split_documents`, sample 1 = `random.Random(1).sample(chunks, 5)`)
+
+```
+--- guide_corry_vale.md#4
+Corry Vale
+
+## What to see
+
+The valley itself is the attraction. The footpath network is dense and well marked, and a circuit taking in three of the four villages is about nine miles with 500 metres of ascent. The chapel in the second village is 12th century and always unlocked.
+
+--- guide_pellew_sands.md#6
+Pellew Sands
+
+## When to go
+
+June and September for the beach without the crowds. July and August are busy and the town is at its most itself, for better and worse. Winter is bleak, largely closed, and has a following among people who like that sort of thing.
+
+--- guide_brightwater.md#3
+Brightwater
+
+## Eat and drink
+
+The riverside strip has six or seven places aimed squarely at visitors and priced accordingly. Two streets back, on Corry Lane, the same food costs about a third less. The Tuesday market sets up in the square from 7am and is finished by 1pm. Most kitchens in town stop serving at 9pm, earlier than visitors expect, and on Sundays many close entirely.
+
+--- guide_elder_ness.md#6
+Elder Ness
+
+## When to go
+
+April to May and September to October for birds, which is what most visitors come for. Midsummer is pleasant and quiet. Winter is severe, the road floods more often, and the pub reduces to weekends only.
+
+--- guide_corry_vale.md#2
+Corry Vale
+
+## Getting around
+
+Nothing within the valley is walkable from anything else — the villages are two to four miles apart. There is one taxi, based in the largest village, and it must be booked a day ahead. Most visitors drive between villages and walk the footpaths in between.
+```
+
+**Criterion 5 — Town question cites that town's own guide** (`generate.py::answer_from_chunks`)
+
+Miss — *How often do buses run to Brightwater on Sundays?* — run 1. Cites the regional guide and **Kestrelford's** guide, not `guide_brightwater.md`:
+- Best distance: 0.3252 (passed the gate)
+- Sources retrieved: guide_brightwater.md, guide_givens_mill.md, guide_kestrelford.md, guide_regional_transport.md
+
+```
+Based on the provided documents, Sunday bus service is minimal to non-existent outside of the Brightwater town routes (*guide_regional_transport.md*). Additionally, buses from Brightwater to Kestrelford do not run at all on Sundays (*guide_kestrelford.md*).
+```
+
+Hit — *Why should visitors check tide tables before going to Elder Ness?* — run 1. Cites its own guide:
+
+```
+Visitors should check the tide tables because the single road into Elder Ness floods at the highest spring tides roughly six times a year for about two hours either side of high water (guide_elder_ness.md).
+```
 
 ## Verdicts
 
